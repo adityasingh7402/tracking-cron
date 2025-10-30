@@ -127,13 +127,13 @@ mongoose.connection.once('open', () => {
   // Run immediately on start
   checkPrices();
   
-  // Schedule cron job - every 1 minute for testing
+  // Schedule cron job - every 5 minutes
   // Change to '0 */10 * * *' for every 10 hours in production
-  cron.schedule('* * * * *', () => {
+  cron.schedule('*/5 * * * *', () => {
     checkPrices();
   });
   
-  console.log('✓ Cron job scheduled (every 1 minute for testing)');
+  console.log('✓ Cron job scheduled (every 5 minutes)');
   console.log('  Change to "0 */10 * * *" for every 10 hours in production');
 });
 
