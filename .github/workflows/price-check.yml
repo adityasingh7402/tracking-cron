@@ -27,4 +27,5 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
         run: node checkPricesOnce.js
