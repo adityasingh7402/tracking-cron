@@ -19,7 +19,8 @@
     "https-proxy-agent": "^7.0.6",
     "mongoose": "^8.0.3",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.7",
+    "puppeteer": "^22.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

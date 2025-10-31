@@ -71,44 +71,63 @@ async function checkPrices() {
     console.log(`Checking ${products.length} product(s)...`);
     
     for (const product of products) {
-      try {
-        console.log(`\nChecking: ${product.name}`);
-        
-        // Scrape current price
-        const scraped = await scrapeProduct(product.url);
-        const currentPrice = scraped.price;
-        const currency = scraped.currency;
-        
-        console.log(`Current price: ${currency}${currentPrice}`);
-        console.log(`Target range: ${currency}${product.minPrice} - ${currency}${product.maxPrice}`);
-        
-        // Update product in database
-        await productsCollection.updateOne(
-          { _id: product._id },
-          {
-            $set: {
-              currentPrice: currentPrice,
-              currency: currency,
-              lastChecked: new Date()
-            }
+      let success = false;
+      let attempt = 0;
+      const maxRetries = 2; // Retry 2 more times if failed
+      
+      while (!success && attempt <= maxRetries) {
+        try {
+          if (attempt === 0) {
+            console.log(`\nChecking: ${product.name}`);
+          } else {
+            console.log(`Retry ${attempt}/${maxRetries} for: ${product.name}`);
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
-        );
-        
-        // Check if price is in range
-        const inRange = currentPrice >= product.minPrice && currentPrice <= product.maxPrice;
-        
-        if (inRange) {
-          console.log(`🔔 ALERT: Price in range! Sending email...`);
-          await sendPriceAlert(product, currentPrice);
-        } else {
-          console.log(`✗ Price outside range (${currentPrice < product.minPrice ? 'too low' : 'too high'})`);
+          
+          // Scrape current price
+          const scraped = await scrapeProduct(product.url);
+          const currentPrice = scraped.price;
+          const currency = scraped.currency;
+          
+          console.log(`Current price: ${currency}${currentPrice}`);
+          console.log(`Target range: ${currency}${product.minPrice} - ${currency}${product.maxPrice}`);
+          
+          // Update product in database
+          await productsCollection.updateOne(
+            { _id: product._id },
+            {
+              $set: {
+                currentPrice: currentPrice,
+                currency: currency,
+                lastChecked: new Date()
+              }
+            }
+          );
+          
+          // Check if price is in range
+          const inRange = currentPrice >= product.minPrice && currentPrice <= product.maxPrice;
+          
+          if (inRange) {
+            console.log(`🔔 ALERT: Price in range! Sending email...`);
+            await sendPriceAlert(product, currentPrice);
+          } else {
+            console.log(`✗ Price outside range (${currentPrice < product.minPrice ? 'too low' : 'too high'})`);
+          }
+          
+          success = true; // Mark as successful
+          
+          // Delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+        } catch (error) {
+          attempt++;
+          console.error(`✗ Attempt ${attempt} failed for ${product.name}:`, error.message);
+          
+          if (attempt > maxRetries) {
+            console.error(`❌ All retries exhausted for ${product.name}`);
+          }
         }
-        
-        // Delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-      } catch (error) {
-        console.error(`Error checking ${product.name}:`, error.message);
       }
     }
     
